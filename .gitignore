@@ -1,0 +1,5 @@
+__pycache__
+db.sqlite3
+.cache.sqlite
+main.bundle.js
+main.bundle.js.map
