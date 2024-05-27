@@ -1,18 +1,20 @@
 from django.contrib import admin
-from .models import Weather
+from .models import Weather, SolarEnergy, PredictEnergy
 
 class WeatherAdmin(admin.ModelAdmin):
     fieldsets = [
-        (None,               {'fields': ['date_time']}),
+        (None,               {'fields': ['date']}),
+        (None,               {'fields': ['time']}),
         (None,               {'fields': ['ambient_temperature']}),
         (None,               {'fields': ['irradiance']}),
         (None,               {'fields': ['temperature_module_1']}),
     ]
-    list_display = ('date_time', 'ambient_temperature', 'irradiance', 'temperature_module_1')
+    list_display = ('date', 'time', 'ambient_temperature', 'irradiance', 'temperature_module_1')
 
 class SolarEnergyAdmin(admin.ModelAdmin):
     fieldsets = [
-        (None,               {'fields': ['date_time']}),
+        (None,               {'fields': ['date']}),
+        (None,               {'fields': ['time']}),
         (None,               {'fields': ['pv_power_generation_inverter']}),
         (None,               {'fields': ['pv_power_generation_power_meter']}),
         (None,               {'fields': ['excess_energy']}),
@@ -33,9 +35,10 @@ class SolarEnergyAdmin(admin.ModelAdmin):
         (None,               {'fields': ['temperature_module_2']}),
     ]
     list_display = (
-        'date_time',
+        'date',
+        'time',
         'pv_power_generation_inverter',
-        'pv_power_generation_power_me',
+        'pv_power_generation_power_meter',
         'excess_energy',
         'purchased',
         'voltage_a',
@@ -56,10 +59,13 @@ class SolarEnergyAdmin(admin.ModelAdmin):
 
 class PredictionEnergyAdmin(admin.ModelAdmin):
     fieldsets = [
-        (None,               {'fields': ['date_time']}),
+        (None,               {'fields': ['date']}),
+        (None,               {'fields': ['time']}),
         (None,               {'fields': ['power_generation']}),
     ]
-    list_display = ('date_time', 'power_generation')
+    list_display = ('date', 'time', 'power_generation')
 
 
 admin.site.register(Weather, WeatherAdmin)
+admin.site.register(SolarEnergy, SolarEnergyAdmin)
+admin.site.register(PredictEnergy, PredictionEnergyAdmin)

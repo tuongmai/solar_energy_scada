@@ -1,13 +1,21 @@
 from django.shortcuts import render
-from django.http import HttpResponse
+from django.http import HttpResponse, JsonResponse
 from django.core import serializers
+from django.core.serializers import serialize
+from django.utils.dateparse import parse_date
 from django.template import loader
+from django.views import View
+from django.views.decorators.csrf import csrf_exempt
+from django.utils.decorators import method_decorator
 
 import json
 import openmeteo_requests
 import requests_cache
 import pandas as pd
 from retry_requests import retry
+
+from datetime import datetime
+from .models import SolarEnergy
 
 def weather_info(request):
     # Setup the Open-Meteo API client with cache and retry on error
@@ -53,3 +61,72 @@ def weather_info(request):
 def home_page(request):
     template = loader.get_template('index.html')
     return HttpResponse(template.render())
+
+def separate_datetime(datetime_str):
+    dt = datetime.strptime(datetime_str, '%m/%d/%Y %H:%M:%S')
+    date_str = dt.strftime('%Y-%m-%d')
+    time_str = dt.strftime('%H:%M')
+    return date_str, time_str
+
+@method_decorator(csrf_exempt, name='dispatch')
+class SolarEnergyView(View):
+    # def get(self, request, *args, **kwargs):
+    #     # start_date = request.GET.get('start_date')
+    #     # end_date = request.GET.get('end_date')
+    #     start_date_str = request.GET.get('start_date')
+    #     end_date_str = request.GET.get('end_date')
+        
+    #     # if not start_date or not end_date:
+    #     if not start_date_str or not end_date_str:
+    #         return JsonResponse({'error': 'Please provide both start_date and end_date'}, status=400)
+        
+    #     try:
+    #         # start_date_obj = parse_date(start_date)
+    #         # end_date_obj = parse_date(end_date)
+    #         start_date = datetime.strptime(start_date_str, '%Y-%m-%d').date()
+    #         start_date_parsed = start_date.strftime('%Y-%m-%d')
+    #         end_date = datetime.strptime(end_date_str, '%Y-%m-%d').date()
+    #         end_date_parsed = end_date.strftime('%Y-%m-%d')
+    #         # if not start_date_obj or not end_date_obj:
+    #         #     raise ValueError
+    #     except ValueError:
+    #         return JsonResponse({'error': 'Invalid date format. Use YYYY-MM-DD.'}, status=400)
+        
+    #     # solar_energies = SolarEnergy.objects.filter(date=(start_date_obj, end_date_obj))
+    #     solar_energies = SolarEnergy.objects.filter(date=(start_date_parsed, end_date_parsed))
+    #     solar_energies_json = serialize('json', solar_energies)
+    #     return JsonResponse(solar_energies_json, safe=False)
+    
+    def get(self, request, *args, **kwargs):
+        start_date_str = request.GET.get('start_date')
+        end_date_str = request.GET.get('end_date')
+        
+        if not start_date_str or not end_date_str:
+            return JsonResponse({'error': 'Please provide both start_datetime and end_datetime'}, status=400)
+        
+        start_date = datetime.strptime(start_date_str, "%Y-%m-%d")
+        end_date = datetime.strptime(end_date_str, "%Y-%m-%d")
+        
+        solar_energies = SolarEnergy.objects.filter(date__gte=start_date, date__lte=end_date)
+        solar_energies_json = serialize('json', solar_energies)
+        return JsonResponse(solar_energies_json, safe=False)
+    
+    def post(self, request, *args, **kwargs):
+        try:
+            data = json.loads(request.body)
+            if not isinstance(data, list):
+                return JsonResponse({'error': 'Expected a list of items'}, status=400)
+            
+            solar_energies = []
+            for item in data:
+                date, time = separate_datetime(item['date_time'])
+                item['date'] = date
+                item['time'] = time
+                del item['date_time']
+                obj = SolarEnergy(**item)
+                solar_energies.append(obj)
+            
+            SolarEnergy.objects.bulk_create(solar_energies)
+            return JsonResponse({'status': 'success'}, status=201)
+        except Exception as e:
+            return JsonResponse({'error': str(e)}, status=400)
