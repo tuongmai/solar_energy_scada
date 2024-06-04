@@ -9,15 +9,24 @@ from django.views.decorators.csrf import csrf_exempt
 from django.utils.decorators import method_decorator
 from django.views.decorators.http import require_http_methods
 
+import os
 import requests
 import json
 import openmeteo_requests
 import requests_cache
 import pandas as pd
+import xgboost as xgb
+import pickle
+import numpy as np
 from retry_requests import retry
 
 from datetime import datetime
 from .models import SolarEnergy
+
+# Load the trained XGBoost model
+model_path = os.path.join(os.path.dirname(__file__), 'model', 'bst_model_v2.pck')
+xgbModel = pickle.load(open(model_path, "rb"))
+MAX = 868.3506
 
 # @method_decorator(csrf_exempt, name='dispatch')
 def weather_forecast(request):
@@ -130,3 +139,69 @@ def proxy_request(request):
 
     # Return the response from the external server
     return JsonResponse(response.json(), status=response.status_code)
+
+def get_weather_forecasting_for_predict(start_date, end_date):
+    # Setup the Open-Meteo API client with cache and retry on error
+    cache_session = requests_cache.CachedSession('.cache', expire_after = 3600)
+    retry_session = retry(cache_session, retries = 5, backoff_factor = 0.2)
+    openmeteo = openmeteo_requests.Client(session = retry_session)
+
+    # Make sure all required weather variables are listed here
+    # The order of variables in hourly or daily is important to assign them correctly below
+    url = "https://api.open-meteo.com/v1/forecast"
+    params = {
+        "latitude": 12.0530676,
+        "longitude": 107.1577547,
+        "hourly": ["temperature_2m", "soil_temperature_0cm", "direct_normal_irradiance"],
+        "timezone": "Asia/Bangkok",
+        "start_date": start_date,
+        "end_date": end_date
+    }
+    responses = openmeteo.weather_api(url, params=params)
+
+    # Process first location. Add a for-loop for multiple locations or weather models
+    response = responses[0]
+    print(f"Coordinates {response.Latitude()}°N {response.Longitude()}°E")
+    print(f"Elevation {response.Elevation()} m asl")
+    print(f"Timezone {response.Timezone()} {response.TimezoneAbbreviation()}")
+    print(f"Timezone difference to GMT+0 {response.UtcOffsetSeconds()} s")
+
+    # Process hourly data. The order of variables needs to be the same as requested.
+    hourly = response.Hourly()
+    hourly_temperature_2m = hourly.Variables(0).ValuesAsNumpy()
+    hourly_soil_temperature_0cm = hourly.Variables(1).ValuesAsNumpy()
+    hourly_direct_normal_irradiance = hourly.Variables(2).ValuesAsNumpy()
+
+    hourly_data = {"date": pd.date_range(
+        start = pd.to_datetime(hourly.Time(), unit = "s", utc = True),
+        end = pd.to_datetime(hourly.TimeEnd(), unit = "s", utc = True),
+        freq = pd.Timedelta(seconds = hourly.Interval()),
+        inclusive = "left"
+    )}
+    hourly_data["ambient_temparature"] = hourly_temperature_2m
+    hourly_data["temparature"] = hourly_soil_temperature_0cm
+    hourly_data["irradiance"] = hourly_direct_normal_irradiance
+
+    hourly_dataframe = pd.DataFrame(data = hourly_data)
+    return hourly_dataframe
+
+def predict_solar_energy(request):
+    if request.method == 'GET':
+        start_date = request.GET.get("start_date")
+        end_date = request.GET.get("end_date")
+
+        weather_dataframe = get_weather_forecasting_for_predict(start_date, end_date)
+        feature = weather_dataframe.drop(["date"], axis=1).copy()
+
+        dmatrix = xgb.DMatrix(feature)
+
+        # Make prediction using the loaded XGBoost model
+        prediction = xgbModel.predict(dmatrix)
+        prediction *= MAX
+        weather_dataframe["power"] = prediction
+
+        data = weather_dataframe.to_json()
+
+        return JsonResponse({'data': data}, status=200)
+    else:
+        return JsonResponse({'error': 'Only GET requests allowed'})

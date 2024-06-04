@@ -1,4 +1,5 @@
 import axios from 'axios'
+import * as moment from 'moment'
 
 export const getWeatherInfo = async () => {
     return 'weather info'
@@ -73,6 +74,27 @@ export const getWeatherForecast = async (start_date, end_date) => {
             date: data.date[key],
             dni: Number(data.direct_normal_irradiance[key].toFixed(2)),
             temperature: Number(data.temperature_2m[key].toFixed(2))
+        })
+    })
+    return returnData
+}
+
+export const getPredictPower = async (start_date, end_date) => {
+    const res = await axios.get('http://127.0.0.1:8080/predict', {
+        params: {
+            start_date,
+            end_date
+        }
+    })
+    const data = JSON.parse(res.data.data)
+    let returnData = []
+    Object.keys(data.date).forEach(key => {
+        returnData.push({
+            date: moment(data.date[key]).valueOf(),
+            dni: Number(data.irradiance[key]?.toFixed(2)),
+            ambient: Number(data.ambient_temparature[key]?.toFixed(2)),
+            temperature: Number(data.temparature[key]?.toFixed(2)),
+            power: data.irradiance[key] > 0 ? Number(data.power[key]?.toFixed(2)) : 0
         })
     })
     return returnData
