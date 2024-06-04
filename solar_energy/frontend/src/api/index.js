@@ -58,3 +58,22 @@ export const getDataRealTime = async (fields) => {
     // });
 
 }
+
+export const getWeatherForecast = async (start_date, end_date) => {
+    const res = await axios.get('http://127.0.0.1:8080/weather_forecast', {
+        params: {
+            start_date,
+            end_date
+        }
+    })
+    const data = JSON.parse(res.data.data)
+    let returnData = []
+    Object.keys(data.date).forEach(key => {
+        returnData.push({
+            date: data.date[key],
+            dni: Number(data.direct_normal_irradiance[key].toFixed(2)),
+            temperature: Number(data.temperature_2m[key].toFixed(2))
+        })
+    })
+    return returnData
+}

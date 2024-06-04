@@ -19,46 +19,55 @@ from retry_requests import retry
 from datetime import datetime
 from .models import SolarEnergy
 
-def weather_info(request):
+# @method_decorator(csrf_exempt, name='dispatch')
+def weather_forecast(request):
     # Setup the Open-Meteo API client with cache and retry on error
     cache_session = requests_cache.CachedSession('.cache', expire_after = 3600)
     retry_session = retry(cache_session, retries = 5, backoff_factor = 0.2)
     openmeteo = openmeteo_requests.Client(session = retry_session)
+    start_date = request.GET.get("start_date")
+    end_date = request.GET.get("end_date")
 
     # Make sure all required weather variables are listed here
-    # The order of variables in hourly or daily is important to assign them correctly below
+    # The order of variables in minutely_15 or daily is important to assign them correctly below
     url = "https://api.open-meteo.com/v1/forecast"
     params = {
         "latitude": 12.0530676,
         "longitude": 107.1577547,
-        "hourly": ["temperature_2m", "soil_temperature_0cm", "direct_normal_irradiance"],
-        "timezone": "Asia/Bangkok"
+        "minutely_15": ["temperature_2m", "direct_normal_irradiance"],
+        "timezone": "Asia/Bangkok",
+        "start_date": start_date,
+	    "end_date": end_date
     }
     responses = openmeteo.weather_api(url, params=params)
 
     # Process first location. Add a for-loop for multiple locations or weather models
     response = responses[0]
 
-    # Process hourly data. The order of variables needs to be the same as requested.
-    hourly = response.Hourly()
-    hourly_temperature_2m = hourly.Variables(0).ValuesAsNumpy()
-    hourly_soil_temperature_0cm = hourly.Variables(1).ValuesAsNumpy()
-    hourly_direct_normal_irradiance = hourly.Variables(2).ValuesAsNumpy()
+    # Process minutely_15 data. The order of variables needs to be the same as requested.
+    minutely_15 = response.Minutely15()
+    minutely_15_temperature_2m = minutely_15.Variables(0).ValuesAsNumpy()
+    # minutely_15_soil_temperature_0cm = minutely_15.Variables(1).ValuesAsNumpy()
+    minutely_15_direct_normal_irradiance = minutely_15.Variables(1).ValuesAsNumpy()
 
-    hourly_data = {"date": pd.date_range(
-        start = pd.to_datetime(hourly.Time(), unit = "s", utc = True),
-        end = pd.to_datetime(hourly.TimeEnd(), unit = "s", utc = True),
-        freq = pd.Timedelta(seconds = hourly.Interval()),
+    minutely_15_data = {"date": pd.date_range(
+        start = pd.to_datetime(minutely_15.Time(), unit = "s", utc = True),
+        end = pd.to_datetime(minutely_15.TimeEnd(), unit = "s", utc = True),
+        freq = pd.Timedelta(seconds = minutely_15.Interval()),
         inclusive = "left"
     )}
-    hourly_data["temperature_2m"] = hourly_temperature_2m
-    hourly_data["soil_temperature_0cm"] = hourly_soil_temperature_0cm
-    hourly_data["direct_normal_irradiance"] = hourly_direct_normal_irradiance
+    minutely_15_data["temperature_2m"] = minutely_15_temperature_2m
+    # minutely_15_data["soil_temperature_0cm"] = minutely_15_soil_temperature_0cm
+    minutely_15_data["direct_normal_irradiance"] = minutely_15_direct_normal_irradiance
 
-    hourly_dataframe = pd.DataFrame(data = hourly_data)
-    print(hourly_dataframe)
-    data = hourly_dataframe.to_json()
-    return HttpResponse(data)
+    minutely_15_dataframe = pd.DataFrame(data = minutely_15_data)
+    # print(minutely_15_dataframe)
+    data = minutely_15_dataframe.to_json()
+    # return HttpResponse(data)
+    return JsonResponse({"data": data}, status=200)
+
+# def weather_archive(request):
+
 
 def home_page(request):
     template = loader.get_template('index.html')
@@ -72,32 +81,6 @@ def separate_datetime(datetime_str):
 
 @method_decorator(csrf_exempt, name='dispatch')
 class SolarEnergyView(View):
-    # def get(self, request, *args, **kwargs):
-    #     # start_date = request.GET.get('start_date')
-    #     # end_date = request.GET.get('end_date')
-    #     start_date_str = request.GET.get('start_date')
-    #     end_date_str = request.GET.get('end_date')
-        
-    #     # if not start_date or not end_date:
-    #     if not start_date_str or not end_date_str:
-    #         return JsonResponse({'error': 'Please provide both start_date and end_date'}, status=400)
-        
-    #     try:
-    #         # start_date_obj = parse_date(start_date)
-    #         # end_date_obj = parse_date(end_date)
-    #         start_date = datetime.strptime(start_date_str, '%Y-%m-%d').date()
-    #         start_date_parsed = start_date.strftime('%Y-%m-%d')
-    #         end_date = datetime.strptime(end_date_str, '%Y-%m-%d').date()
-    #         end_date_parsed = end_date.strftime('%Y-%m-%d')
-    #         # if not start_date_obj or not end_date_obj:
-    #         #     raise ValueError
-    #     except ValueError:
-    #         return JsonResponse({'error': 'Invalid date format. Use YYYY-MM-DD.'}, status=400)
-        
-    #     # solar_energies = SolarEnergy.objects.filter(date=(start_date_obj, end_date_obj))
-    #     solar_energies = SolarEnergy.objects.filter(date=(start_date_parsed, end_date_parsed))
-    #     solar_energies_json = serialize('json', solar_energies)
-    #     return JsonResponse(solar_energies_json, safe=False)
     
     def get(self, request, *args, **kwargs):
         start_date_str = request.GET.get('start_date')

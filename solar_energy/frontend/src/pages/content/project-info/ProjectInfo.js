@@ -37,8 +37,10 @@ const BarChart = ({ data, mode }) => {
     if (parentWidth === 0) return; // Wait until parent width is set
 
     let step
+    let xDomainStart = 1
     if (mode === 'date') {
       step = 100
+      xDomainStart = 0
     }
     else if (mode === 'month') {
       step = 1500
@@ -63,7 +65,7 @@ const BarChart = ({ data, mode }) => {
     // X scale and Axis
     const x = d3.scaleBand()
                 .range([0, width])
-                .domain(data.map((_, i) => i))
+                .domain(data.map((_, i) => i + xDomainStart))
                 .padding(0.1);
 
     g.append("g")
@@ -111,7 +113,7 @@ const BarChart = ({ data, mode }) => {
     bars.enter()
         .append("rect")
         .attr("class", "bar")
-        .attr("x", (_, i) => x(i) + x.bandwidth() / 4)
+        .attr("x", (_, i) => x(i + xDomainStart) + x.bandwidth() / 4)
         .attr("width", x.bandwidth() / 4)
         .attr("y", d => y(d.Value))
         .attr("height", d => height - y(d.Value))
@@ -315,7 +317,6 @@ const ProjectInfo = () => {
     if (isFetchEnergy) {
       getProjectSolarEnergy(timeUnit[pickerMode], dateStart, dateEnd)
         .then(res => {
-          console.log('res: ', res)
           let tmp = res.data
           if (pickerMode === 'date') {
             tmp.map(data => {
@@ -345,7 +346,6 @@ const ProjectInfo = () => {
     async function getPowerData() {
       if (isFetchPower) {
         const res = await getProjectSolarPower(powerDate)
-        console.log('power: ', res)
         let tmp = res.data
         let tmpTime = parseInt(tmp[tmp.length - 1]?.DateTime?.split('(')[1].split(')')[0])
         let i = 1
@@ -372,9 +372,9 @@ const ProjectInfo = () => {
       <div className={classes.chartContainer}>
         <div className={classes.chart}>
           <div className={classes.chartHeader}>
-            <DatePicker defaultValue={dayjs(moment().format(dateFormat), dateFormat)} onChange={onChangeDate} picker='date' style={{ display: pickerMode === 'date' ? 'block' : 'none', width: '150px' }} />
-            <DatePicker defaultValue={dayjs(moment().format(dateFormat), dateFormat)} onChange={onChangeMonth} picker='month' style={{ display: pickerMode === 'month' ? 'block' : 'none', width: '150px' }} />
-            <DatePicker defaultValue={dayjs(moment().format(dateFormat), dateFormat)} onChange={onChangeYear} picker='year' style={{ display: pickerMode === 'year' ? 'block' : 'none', width: '150px' }} />
+            <DatePicker defaultValue={dayjs(moment().format(dateFormat), dateFormat)} maxDate={dayjs(moment().format(dateFormat), dateFormat)} onChange={onChangeDate} picker='date' style={{ display: pickerMode === 'date' ? 'block' : 'none', width: '150px' }} />
+            <DatePicker defaultValue={dayjs(moment().format(dateFormat), dateFormat)} maxDate={dayjs(moment().format(dateFormat), dateFormat)} onChange={onChangeMonth} picker='month' style={{ display: pickerMode === 'month' ? 'block' : 'none', width: '150px' }} />
+            <DatePicker defaultValue={dayjs(moment().format(dateFormat), dateFormat)} maxDate={dayjs(moment().format(dateFormat), dateFormat)} onChange={onChangeYear} picker='year' style={{ display: pickerMode === 'year' ? 'block' : 'none', width: '150px' }} />
             <Radio.Group value={pickerMode} onChange={(e) => setPickerMode(e.target.value)}>
               <Radio.Button key='date' value="date" onClick={onChangeDate}>Day</Radio.Button>
               <Radio.Button key='month' value="month" onClick={onChangeMonth}>Month</Radio.Button>

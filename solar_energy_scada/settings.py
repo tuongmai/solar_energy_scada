@@ -130,10 +130,10 @@ STATICFILES_DIRS = [
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-CORS_ALLOWED_ORIGINS = [
-    'http://127.0.0.1:8080',  # Add your frontend's origin
-]
+# CORS_ALLOWED_ORIGINS = [
+#     'http://127.0.0.1:8080',  # Add your frontend's origin
+# ]
 
-CORS_ALLOW_HEADERS = list(default_headers) + [
-    'content-type',  # Add any additional headers you want to allow
-]
+# CORS_ALLOW_HEADERS = list(default_headers) + [
+#     'content-type',  # Add any additional headers you want to allow
+# ]
