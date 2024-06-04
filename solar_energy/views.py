@@ -7,7 +7,9 @@ from django.template import loader
 from django.views import View
 from django.views.decorators.csrf import csrf_exempt
 from django.utils.decorators import method_decorator
+from django.views.decorators.http import require_http_methods
 
+import requests
 import json
 import openmeteo_requests
 import requests_cache
@@ -106,7 +108,7 @@ class SolarEnergyView(View):
         
         start_date = datetime.strptime(start_date_str, "%Y-%m-%d")
         end_date = datetime.strptime(end_date_str, "%Y-%m-%d")
-        
+
         solar_energies = SolarEnergy.objects.filter(date__gte=start_date, date__lte=end_date)
         solar_energies_json = serialize('json', solar_energies)
         return JsonResponse(solar_energies_json, safe=False)
@@ -130,3 +132,18 @@ class SolarEnergyView(View):
             return JsonResponse({'status': 'success'}, status=201)
         except Exception as e:
             return JsonResponse({'error': str(e)}, status=400)
+        
+@csrf_exempt
+@require_http_methods(["POST"])
+def proxy_request(request):
+    url = 'http://sol-scada.com/DataRealTime/Read'  # External API URL
+
+    headers = {
+        'Content-Type': 'application/json',
+    }
+
+    # Forward the request to the external server
+    response = requests.post(url, headers=headers, json=request.json())
+
+    # Return the response from the external server
+    return JsonResponse(response.json(), status=response.status_code)
