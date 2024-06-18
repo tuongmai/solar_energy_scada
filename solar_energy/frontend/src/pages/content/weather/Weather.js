@@ -83,14 +83,14 @@ const Weather = () => {
       <div className={classes.cardContainer}>
         <div className={classes.card}>
           <div>
-            <h2 style={{color: 'blue', fontWeight: '700'}}>{currentIrradiance} W/m2</h2>
+            <h2 style={{color: '#2d8cf0', fontWeight: '700'}}>{currentIrradiance} W/m2</h2>
             <p>Irradiation</p>
           </div>
           <img src='/static/image/irradiance_icon.png' style={{ height: '50px' }}/>
         </div>
         <div className={classes.card}>
           <div>
-            <h2 style={{color: 'blue', fontWeight: '700'}}>{currentTemperature} °C</h2>
+            <h2 style={{color: '#2d8cf0', fontWeight: '700'}}>{currentTemperature} °C</h2>
             <p>Ambient Temperature</p>
           </div>
           <img src='/static/image/temperature_icon.png' style={{ height: '50px' }}/>

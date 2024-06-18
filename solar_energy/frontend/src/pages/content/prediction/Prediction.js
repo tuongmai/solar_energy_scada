@@ -15,7 +15,7 @@ const Prediction = () => {
   const view = useSelector(state => state.view.view)
   const [data, setData] = useState([])
   const [startDate, setStartDate] = useState(moment().format(dateFormat))
-  const [endDate, setEndDate] = useState(moment().format(dateFormat))
+  const [endDate, setEndDate] = useState(moment().add(7, 'days').format(dateFormat))
 
   const classes = useStylePrediction()
 
@@ -29,7 +29,11 @@ const Prediction = () => {
       .then(async (res) => {
         let dataTmp = []
         await Promise.all(res.map(i => {
-          dataTmp.push({ DateTime: i.date, Value: i.power })
+          dataTmp.push({
+            ...i,
+            DateTime: i.date,
+            Value: i.power
+          })
         }))
         setData(dataTmp)
       })
@@ -40,11 +44,11 @@ const Prediction = () => {
       <div className={classes.chart}>
         <div className={classes.chartHeader}>
           <RangePicker
-            defaultValue={[dayjs(moment().format(dateFormat), dateFormat), dayjs(moment().format(dateFormat), dateFormat)]}
+            defaultValue={[dayjs(moment().format(dateFormat), dateFormat), dayjs(moment().add(7, 'days').format(dateFormat), dateFormat)]}
             format={dateFormat}
             onChange={onRangeChange}
             minDate={dayjs(moment().format(dateFormat), dateFormat)}
-            maxDate={dayjs(moment().add(16, 'days').format(dateFormat), dateFormat)}
+            maxDate={dayjs(moment().add(15, 'days').format(dateFormat), dateFormat)}
             style={{ width: 'fit-content' }}
           />
         </div>

@@ -189,14 +189,15 @@ const LineChart = ({ data }) => {
                 .range([0, width])
                 .domain([0, 23]);
 
-    g.append("g")
-     .attr("transform", `translate(0,${height})`)
-     .call(d3.axisBottom(x)
-             .ticks(24)
-             .tickFormat(d => d % 1 === 0 ? d : "")
-             .tickSize(0)) // Hide x-axis tick marks
-     .selectAll("text")
-     .attr("dy", "1em"); // Adjust the y position of x-axis labels
+    const xAxis = g.append("g")
+                    .attr("transform", `translate(0,${height})`)
+                    .call(d3.axisBottom(x)
+                            .ticks(24)
+                            .tickFormat(d => d % 1 === 0 ? d : "")
+                            .tickSize(0)); // Hide x-axis tick marks
+
+    xAxis.selectAll("text")
+          .attr("dy", "1em"); // Adjust the y position of x-axis labels
 
     // Y scale and Axis
     const maxValue = d3.max(filteredData, d => d.Value);
@@ -237,32 +238,76 @@ const LineChart = ({ data }) => {
                    .y(d => y(d.Value));
 
     // Draw line
-    g.append("path")
-     .datum(filteredData)
-     .attr("class", "line")
-     .attr("d", line);
+    // g.append("path")
+    //  .datum(filteredData)
+    //  .attr("class", "line")
+    //  .attr("d", line);
+
+    // // Points
+    // g.selectAll(".dot")
+    //  .data(filteredData)
+    //  .enter().append("circle")
+    //  .attr("class", "dot")
+    //  .attr("cx", d => x(d.parsedDate.getHours() + d.parsedDate.getMinutes() / 60))
+    //  .attr("cy", d => y(d.Value))
+    //  .attr("r", 5)
+    //  .on("mouseover", function(event, d) {
+    //    tooltip.transition()
+    //           .duration(200)
+    //           .style("opacity", .9);
+    //    tooltip.html(`${d.parsedDate.getHours() < 10 ? '0' + d.parsedDate.getHours() : d.parsedDate.getHours()}:${d.parsedDate.getMinutes() < 10 ? '0' + d.parsedDate.getMinutes() : d.parsedDate.getMinutes()}<br>Value: ${d.Value}`)
+    //           .style("left", (event.pageX + 5) + "px")
+    //           .style("top", (event.pageY - 28) + "px");
+    //  })
+    //  .on("mouseout", function() {
+    //    tooltip.transition()
+    //           .duration(500)
+    //           .style("opacity", 0);
+    //  });
+
+    const linePath = g.append("path")
+                      .datum(filteredData)
+                      .attr("class", "line")
+                      .attr("d", line);
 
     // Points
-    g.selectAll(".dot")
-     .data(filteredData)
-     .enter().append("circle")
-     .attr("class", "dot")
-     .attr("cx", d => x(d.parsedDate.getHours() + d.parsedDate.getMinutes() / 60))
-     .attr("cy", d => y(d.Value))
-     .attr("r", 5)
-     .on("mouseover", function(event, d) {
-       tooltip.transition()
-              .duration(200)
-              .style("opacity", .9);
-       tooltip.html(`${d.parsedDate.getHours() < 10 ? '0' + d.parsedDate.getHours() : d.parsedDate.getHours()}:${d.parsedDate.getMinutes() < 10 ? '0' + d.parsedDate.getMinutes() : d.parsedDate.getMinutes()}<br>Value: ${d.Value}`)
-              .style("left", (event.pageX + 5) + "px")
-              .style("top", (event.pageY - 28) + "px");
-     })
-     .on("mouseout", function() {
-       tooltip.transition()
-              .duration(500)
-              .style("opacity", 0);
-     });
+    const dots = g.selectAll(".dot")
+                  .data(filteredData)
+                  .enter().append("circle")
+                  .attr("class", "dot")
+                  .attr("cx", d => x(d.parsedDate.getHours() + d.parsedDate.getMinutes() / 60))
+                  .attr("cy", d => y(d.Value))
+                  .attr("r", 5)
+                  .on("mouseover", function(event, d) {
+                    tooltip.transition()
+                          .duration(200)
+                          .style("opacity", .9);
+                    tooltip.html(`${moment(d.parsedDate).format('MMM Do HH:mm')}<br>Value: ${d.Value}`)
+                          .style("left", (event.pageX + 5) + "px")
+                          .style("top", (event.pageY - 28) + "px");
+                  })
+                  .on("mouseout", function() {
+                    tooltip.transition()
+                          .duration(500)
+                          .style("opacity", 0);
+                  });
+
+    // Zoom function
+    const zoom = d3.zoom()
+                  .scaleExtent([1, 10])
+                  .translateExtent([[0, 0], [width, height]])
+                  .extent([[0, 0], [width, height]])
+                  .on("zoom", (event) => {
+                    const newX = event.transform.rescaleX(x);
+                    xAxis.call(d3.axisBottom(newX)
+                                  .ticks(24)
+                                  .tickFormat(d => d % 1 === 0 ? d : "")
+                                  .tickSize(0));
+                    linePath.attr("d", line.x(d => newX(d.parsedDate.getHours() + d.parsedDate.getMinutes() / 60)));
+                    dots.attr("cx", d => newX(d.parsedDate.getHours() + d.parsedDate.getMinutes() / 60));
+                  });
+
+    svg.call(zoom);
 
   }, [data, parentWidth]);
 

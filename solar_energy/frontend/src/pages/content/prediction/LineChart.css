@@ -3,9 +3,42 @@
     stroke: green;
     stroke-width: 2px;
   }
+
+  .line1 {
+    fill: none;
+    stroke: green;
+    stroke-width: 2px;
+  }
+
+  .line2 {
+    fill: none;
+    stroke: rgb(227, 212, 3);
+    stroke-width: 2px;
+  }
+
+  .line3 {
+    fill: none;
+    stroke: rgb(203, 3, 3);
+    stroke-width: 2px;
+  }
   
   .dot {
     fill: green;
+    r: 2;
+  }
+
+  .dot1 {
+    fill: green;
+    r: 2;
+  }
+
+  .dot2 {
+    fill: rgb(227, 212, 3);
+    r: 2;
+  }
+
+  .dot3 {
+    fill: rgb(203, 3, 3);
     r: 2;
   }
   
