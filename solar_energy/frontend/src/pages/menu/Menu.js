@@ -15,7 +15,7 @@ export const Menu = () => {
     home: { label: 'Home', value: 'home' },
     project: { label: 'Project', value: 'project' },
     factory: { label: 'Factory', value: 'factory' },
-    projectInfo: { label: 'Project Info', value: 'project-info' },
+    projectInfo: { label: 'Info', value: 'project-info' },
     weather: { label: 'Weather', value: 'weather' },
     prediction: { label: 'Prediction', value: 'prediction' },
   }
@@ -78,7 +78,7 @@ export const Menu = () => {
                 <ul>
                   <li className={classes.subsubItem} id='project-info' onClick={() => handleClickSubItem(menuItem.projectInfo.value)}>
                     <div className='square'></div>
-                    <span>Project Info</span>
+                    <span>Info</span>
                   </li>
                   <li className={classes.subsubItem} id='weather' onClick={() => handleClickSubItem(menuItem.weather.value)}>
                     <div className='square'></div>

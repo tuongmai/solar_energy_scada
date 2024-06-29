@@ -399,7 +399,7 @@ const ProjectInfo = () => {
           tmp.push({ DateTime: dateTime, Value: null })
         }
         setPowerData(tmp)
-        // setIsFetchPower(false)
+        setIsFetchPower(false)
       }
     }
 
