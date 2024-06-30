@@ -6,62 +6,66 @@ import './LineChart.css'
 const LineChart = ({ data, measure, graphStep }) => {
     const svgRef = useRef();
     const [parentWidth, setParentWidth] = useState(0);
-  
+
     useEffect(() => {
       const handleResize = () => {
         const parentNode = svgRef.current.parentNode;
         setParentWidth(parentNode.clientWidth);
       };
-  
+
       handleResize(); // Set initial width
       window.addEventListener('resize', handleResize);
-  
+
       return () => window.removeEventListener('resize', handleResize);
     }, []);
-  
+
     useEffect(() => {
       if (parentWidth === 0) return; // Wait until parent width is set
-  
-      const margin = { top: 20, right: 60, bottom: 40, left: 80 },
+
+      const margin = { top: 20, right: 60, bottom: 50, left: 80 },
             width = (parentWidth) - margin.left - margin.right,
             height = 400 - margin.top - margin.bottom;
-  
+
       const svg = d3.select(svgRef.current)
                     .attr("width", width + margin.left + margin.right)
                     .attr("height", height + margin.top + margin.bottom);
-  
+
       svg.selectAll("*").remove(); // Clear previous content
-  
+
       const g = svg.append("g")
                    .attr("transform", `translate(${margin.left},${margin.top})`);
-  
+
       // Parse the date strings and filter out invalid data
       const parseDate = d3.timeParse("%Q");
       const filteredData = data
         .map(d => ({ ...d, parsedDate: parseDate(d.DateTime) }))
         .filter(d => d.Value !== null && d.Value >= 0);
-  
-      const x = d3.scaleLinear()
+
+      const minDate = d3.min(filteredData, d => d.parsedDate);
+      const maxDate = d3.max(filteredData, d => d.parsedDate);
+      const x = d3.scaleTime()
                   .range([0, width])
-                  .domain([0, data.length]);
-  
+                  .domain([minDate, maxDate]);
+
       const xAxis = g.append("g")
                       .attr("transform", `translate(0,${height})`)
                       .call(d3.axisBottom(x)
-                              .ticks(24)
-                              .tickFormat(d => d % 1 === 0 ? d : "")
-                              .tickSize(0)); // Hide x-axis tick marks
+                              .tickFormat(d => moment(d).format('Do HH:mm'))
+                              .tickSize(2));
 
       xAxis.selectAll("text")
-            .attr("dy", "1em"); // Adjust the y position of x-axis labels
-  
+            .attr("transform", "rotate(45)")
+            .style("text-anchor", "start")
+            .attr("dy", ".35em")
+            .attr("dx", ".35em");
+
       // Y scale and Axis
       const maxValue = d3.max(filteredData, d => d.Value);
       const y = d3.scaleLinear()
                   .domain([0, Math.ceil(maxValue /graphStep) * graphStep])
                   .nice()
                   .range([height, 0]);
-  
+
       g.append("g")
        .call(d3.axisLeft(y)
                .ticks(5)
@@ -73,7 +77,7 @@ const LineChart = ({ data, measure, graphStep }) => {
        .call(g => g.selectAll(".tick line")
                    .attr("stroke", "#ccc") // Style grid lines
        );
-  
+
       // Y-axis label
       g.append("text")
        .attr("class", "y-axis-label")
@@ -86,7 +90,7 @@ const LineChart = ({ data, measure, graphStep }) => {
                   .domain([0, Math.ceil(maxValue2 / 5) * 5 + 10])
                   .nice()
                   .range([height, 0]);
-   
+
       g.append("g")
         .attr("transform", `translate(${width},0)`)
         .call(d3.axisRight(y2)
@@ -102,83 +106,64 @@ const LineChart = ({ data, measure, graphStep }) => {
         .attr("text-anchor", "middle")
         .attr("transform", `translate(${width + margin.right - 15},${height / 2})rotate(-90)`)
         .text("Temperature (°C)"); // Change this text to your desired y-axis label
-  
+
       // Tooltip
       const tooltip = d3.select("body")
                         .append("div")
                         .attr("class", "tooltip")
                         .style("opacity", 0);
-  
+
       // Line generator with missing data handling
       const energyLine = d3.line()
                      .defined(d => d.Value !== null && d.Value >= 0)
-                    //  .x(d => x(d.parsedDate.getHours() + d.parsedDate.getMinutes() / 60))
-                     .x((d, index) => x(index + d.parsedDate.getMinutes() / 60))
+                     .x(d => x(d.parsedDate))
                      .y(d => y(d.Value));
 
       const dniLine = d3.line()
                      .defined(d => d.dni !== null && d.dni >= 0)
-                    //  .x(d => x(d.parsedDate.getHours() + d.parsedDate.getMinutes() / 60))
-                     .x((d, index) => x(index + d.parsedDate.getMinutes() / 60))
+                     .x(d => x(d.parsedDate))
                      .y(d => y(d.dni));
 
       const temperatureLine = d3.line()
                      .defined(d => d.temperature !== null && d.temperature >= 0)
-                    //  .x(d => x(d.parsedDate.getHours() + d.parsedDate.getMinutes() / 60))
-                     .x((d, index) => x(index + d.parsedDate.getMinutes() / 60))
+                     .x(d => x(d.parsedDate))
                      .y(d => y2(d.temperature));
-  
-      // Draw line
-      // g.append("path")
-      //  .datum(filteredData)
-      //  .attr("class", "line")
-      //  .attr("d", line);
-  
-      // // Points
-      // g.selectAll(".dot")
-      //  .data(filteredData)
-      //  .enter().append("circle")
-      //  .attr("class", "dot")
-      // //  .attr("cx", d => x(d.parsedDate.getHours() + d.parsedDate.getMinutes() / 60))
-      //  .attr("cx", (d, index) => x(index + d.parsedDate.getMinutes() / 60))
-      //  .attr("cy", d => y(d.Value))
-      //  .attr("r", 5)
-      //  .on("mouseover", function(event, d) {
-      //    tooltip.transition()
-      //           .duration(200)
-      //           .style("opacity", .9);
-      //    tooltip.html(`${moment(d.parsedDate).format('MMM Do HH:mm')}<br>Value: ${d.Value}`)
-      //           .style("left", (event.pageX + 5) + "px")
-      //           .style("top", (event.pageY - 28) + "px");
-      //  })
-      //  .on("mouseout", function() {
-      //    tooltip.transition()
-      //           .duration(500)
-      //           .style("opacity", 0);
-      //  });
 
-      const energyLinePath = g.append("path")
+      const energyLinePath = g.append("svg")
+                      .attr("width", width)
+                      .attr("height", height + margin.top + margin.bottom)
+                      .append("path")
                       .datum(filteredData)
                       .attr("class", "line line1")
                       .attr("d", energyLine);
 
-      const dniLinePath = g.append("path")
+      const dniLinePath = g.append("svg")
+                      .attr("width", width)
+                      .attr("height", height + margin.top + margin.bottom)
+                      .append("path")
                       .datum(filteredData)
                       .attr("class", "line line2")
                       .attr("d", dniLine);
 
-      const temperatureLinePath = g.append("path")
+      const temperatureLinePath = g.append("svg")
+                      .attr("width", width)
+                      .attr("height", height + margin.top + margin.bottom)
+                      .append("path")
                       .datum(filteredData)
                       .attr("class", "line line3")
                       .attr("d", temperatureLine);
       // Points
       const energyDots = g.selectAll(".dot1")
                     .data(filteredData)
-                    .enter().append("circle")
+                    .enter()
+                    .append("svg")
+                    .attr("width", width)
+                    .attr("height", height + margin.top + margin.bottom)
+                    .append("circle")
                     .attr("class", "dot dot1")
-                    .attr("cx", (d, index) => x(index + d.parsedDate.getMinutes() / 60))
+                    .attr("cx", d => x(d.parsedDate))
                     .attr("cy", d => y(d.Value))
-                    .attr("r", 5)
+                    .attr("r", 2)
                     .on("mouseover", function(event, d) {
                       tooltip.transition()
                             .duration(200)
@@ -195,11 +180,15 @@ const LineChart = ({ data, measure, graphStep }) => {
 
       const dniDots = g.selectAll(".dot2")
                     .data(filteredData)
-                    .enter().append("circle")
+                    .enter()
+                    .append("svg")
+                    .attr("width", width)
+                    .attr("height", height + margin.top + margin.bottom)
+                    .append("circle")
                     .attr("class", "dot dot2")
-                    .attr("cx", (d, index) => x(index + d.parsedDate.getMinutes() / 60))
+                    .attr("cx", d => x(d.parsedDate))
                     .attr("cy", d => y(d.dni))
-                    .attr("r", 5)
+                    .attr("r", 2)
                     .on("mouseover", function(event, d) {
                       tooltip.transition()
                             .duration(200)
@@ -216,11 +205,15 @@ const LineChart = ({ data, measure, graphStep }) => {
 
       const temperatureDots = g.selectAll(".dot3")
                     .data(filteredData)
-                    .enter().append("circle")
+                    .enter()
+                    .append("svg")
+                    .attr("width", width)
+                    .attr("height", height + margin.top + margin.bottom)
+                    .append("circle")
                     .attr("class", "dot dot3")
-                    .attr("cx", (d, index) => x(index + d.parsedDate.getMinutes() / 60))
+                    .attr("cx", d => x(d.parsedDate))
                     .attr("cy", d => y2(d.temperature))
-                    .attr("r", 5)
+                    .attr("r", d => d.temperature ? 2 : 0)
                     .on("mouseover", function(event, d) {
                       tooltip.transition()
                             .duration(200)
@@ -243,21 +236,25 @@ const LineChart = ({ data, measure, graphStep }) => {
                     .on("zoom", (event) => {
                       const newX = event.transform.rescaleX(x);
                       xAxis.call(d3.axisBottom(newX)
-                                    .ticks(24)
-                                    .tickFormat(d => d % 1 === 0 ? d : "")
-                                    .tickSize(0));
-                      dniLinePath.attr("d", dniLine.x((d, index) => newX(index + d.parsedDate.getMinutes() / 60)));
-                      temperatureLinePath.attr("d", temperatureLine.x((d, index) => newX(index + d.parsedDate.getMinutes() / 60)));
-                      energyLinePath.attr("d", energyLine.x((d, index) => newX(index + d.parsedDate.getMinutes() / 60)));
-                      dniDots.attr("cx", (d, index) => newX(index + d.parsedDate.getMinutes() / 60));
-                      temperatureDots.attr("cx", (d, index) => newX(index + d.parsedDate.getMinutes() / 60));
-                      energyDots.attr("cx", (d, index) => newX(index + d.parsedDate.getMinutes() / 60));
+                                    .tickFormat(d => moment(d).format('Do HH:mm'))
+                                    .tickSize(2));
+                      xAxis.selectAll("text")
+                                    .attr("transform", "rotate(45)")
+                                    .style("text-anchor", "start")
+                                    .attr("dy", ".35em")
+                                    .attr("dx", ".35em");
+                      dniLinePath.attr("d", dniLine.x(d => newX(d.parsedDate)));
+                      temperatureLinePath.attr("d", temperatureLine.x(d => newX(d.parsedDate)));
+                      energyLinePath.attr("d", energyLine.x(d => newX(d.parsedDate)));
+                      dniDots.attr("cx", d => newX(d.parsedDate));
+                      temperatureDots.attr("cx", d => newX(d.parsedDate));
+                      energyDots.attr("cx", d => newX(d.parsedDate));
                     });
 
       svg.call(zoom);
-  
+
     }, [data, parentWidth]);
-  
+
     return (
       <>
         <svg ref={svgRef}></svg>

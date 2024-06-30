@@ -3,7 +3,7 @@ import { Table } from 'antd'
 import useStyleHome from './style'
 
 const Home = () => {
-  const [powerData, setPowerData] = useState([{ plant: 'Rental Factory 1', gridDate: '2023-07-10', currentPower: '', yieldToday: '', totalYield: ''}])
+  const [powerData, setPowerData] = useState([{ plant: 'Rental Factory 1', gridDate: '2023-07-10', currentPower: '--', yieldToday: '--', totalYield: '--'}])
   const classes = useStyleHome();
 
   const infoColumns = [

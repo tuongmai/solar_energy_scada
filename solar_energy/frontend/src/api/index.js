@@ -28,40 +28,17 @@ export const getProjectSolarPower = async (datetime) => {
 }
 
 export const getDataRealTime = async (fields) => {
-    // const res = await axios.post('http://sol-scada.com/DataRealTime/Read', fields)
-    // const res = await axios.post('http://127.0.0.1:8000/proxy/', {
-    //     data: fields
-    // })
     const res = await axios({
         method: 'POST',
         url: 'http://sol-scada.com/DataRealTime/Read',
-        // url: 'http://127.0.0.1:8000/proxy/',
-        // headers: {
-        //     'Content-Type': 'application/json',
-        //     'Access-Control-Allow-Origin': '*'
-        // },
         data: fields,
         withCredentials: false
     })
     return res
-    // const fetchPromise = fetch("http://sol-scada.com/DataRealTime/Read", {
-    //     method: "POST",
-    //     mode: "cors",
-    //     headers: {
-    //         "Content-Type": "text/xml",
-    //         'Access-Control-Allow-Origin': '*'
-    //     },
-    //     body: fields,
-    // });
-
-    // fetchPromise.then((response) => {
-    //     console.log(response.status);
-    // });
-
 }
 
 export const getWeatherForecast = async (start_date, end_date) => {
-    const res = await axios.get('http://127.0.0.1:8080/weather_forecast', {
+    const res = await axios.get('/weather_forecast', {
         params: {
             start_date,
             end_date
@@ -80,7 +57,7 @@ export const getWeatherForecast = async (start_date, end_date) => {
 }
 
 export const getPredictPower = async (start_date, end_date) => {
-    const res = await axios.get('http://127.0.0.1:8080/predict', {
+    const res = await axios.get('/predict', {
         params: {
             start_date,
             end_date
@@ -92,8 +69,8 @@ export const getPredictPower = async (start_date, end_date) => {
         returnData.push({
             date: moment(data.date[key]).valueOf(),
             dni: Number(data.irradiance[key]?.toFixed(2)),
-            ambient: Number(data.ambient_temparature[key]?.toFixed(2)),
-            temperature: Number(data.temparature[key]?.toFixed(2)),
+            temperature: Number(data.ambient_temparature[key]?.toFixed(2)),
+            // soil_temperature: Number(data.temparature[key]?.toFixed(2)),
             power: data.irradiance[key] > 0 ? Number(data.power[key]?.toFixed(2)) : 0
         })
     })

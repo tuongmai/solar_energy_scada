@@ -54,7 +54,21 @@ const Prediction = () => {
         </div>
         <div className={classes.chartContent}>
           <h3>Power Prediction</h3>
-          <LineChart data={data} measure={'Power (kW)'} graphStep={100} />
+          <LineChart data={data} measure={'Power (kW) / Irradiance (W/m2)'} graphStep={100} />
+        </div>
+        <div className={classes.note}>
+          <div className={classes.noteItem}>
+            <div style={{ backgroundColor: 'green' }}></div>
+            <span>Power</span>
+          </div>
+          <div className={classes.noteItem}>
+            <div style={{ backgroundColor: 'rgb(227, 212, 3)' }}></div>
+            <span>Irradiance</span>
+          </div>
+          <div className={classes.noteItem}>
+            <div style={{ backgroundColor: 'rgb(203, 3, 3)' }}></div>
+            <span>Temperature</span>
+          </div>
         </div>
       </div>
     </div>

@@ -21,27 +21,23 @@
     stroke: rgb(203, 3, 3);
     stroke-width: 2px;
   }
-  
+
   .dot {
     fill: green;
-    r: 2;
   }
 
   .dot1 {
     fill: green;
-    r: 2;
   }
 
   .dot2 {
     fill: rgb(227, 212, 3);
-    r: 2;
   }
 
   .dot3 {
     fill: rgb(203, 3, 3);
-    r: 2;
   }
-  
+
   .tooltip {
     position: absolute;
     text-align: center;
@@ -54,8 +50,7 @@
     border-radius: 8px;
     pointer-events: none;
   }
-  
+
   .y-axis-label {
     font: 12px sans-serif;
   }
-  

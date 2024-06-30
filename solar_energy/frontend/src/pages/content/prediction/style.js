@@ -35,7 +35,6 @@ const useStylePrediction = createUseStyles({
     chart: {
         display: 'flex',
         flexDirection: 'column',
-        gap: '20px',
         border: '1px solid #e7e7e7',
         width: '99%',
         borderRadius: '6px'
@@ -55,6 +54,24 @@ const useStylePrediction = createUseStyles({
         '& h3': {
             margin: 0
         }
+    },
+    note: {
+        display: 'flex',
+        flexDirection: 'row',
+        justifyContent: 'space-around',
+        alignItems: 'center',
+        border: '1px solid #e7e7e7',
+    },
+    noteItem: {
+        '& div': {
+            height: '2px',
+            width: '45px'
+        },
+        display: 'flex',
+        flexDirection: 'row',
+        gap: '10px',
+        alignItems: 'center',
+        padding: '15px 40px'
     }
 })
 

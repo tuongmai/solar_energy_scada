@@ -38,15 +38,19 @@ const BarChart = ({ data, mode }) => {
 
     let step
     let xDomainStart = 1
+    let dateFormat = 'MMM Do HH:mm'
     if (mode === 'date') {
       step = 100
       xDomainStart = 0
+      dateFormat = 'MMM Do HH:mm'
     }
     else if (mode === 'month') {
       step = 1500
+      dateFormat = 'MMM Do'
     }
     else if (mode === 'year') {
       step = 50000
+      dateFormat = 'YYYY MMM'
     }
 
     const margin = { top: 20, right: 60, bottom: 40, left: 80 },
@@ -61,6 +65,12 @@ const BarChart = ({ data, mode }) => {
 
     const g = svg.append("g")
                  .attr("transform", `translate(${margin.left + 15},${margin.top})`);
+
+    // Parse the date strings and filter out invalid data
+    const parseDate = d3.timeParse("/Date(%Q)/");
+    const filteredData = data
+      .map(d => ({ ...d, parsedDate: parseDate(d.DateTime) }))
+      .filter(d => d.Value !== null && d.Value >= 0);
 
     // X scale and Axis
     const x = d3.scaleBand()
@@ -108,7 +118,7 @@ const BarChart = ({ data, mode }) => {
 
     // Bars
     const bars = g.selectAll(".bar")
-                  .data(data);
+                  .data(filteredData)
 
     bars.enter()
         .append("rect")
@@ -121,7 +131,7 @@ const BarChart = ({ data, mode }) => {
           tooltip.transition()
                  .duration(200)
                  .style("opacity", .9);
-          tooltip.html(`Energy: ${d.Value}`)
+          tooltip.html(`${moment(d.parsedDate).format(dateFormat)}<br>Value: ${d.Value}`)
                  .style("left", (event.pageX + 5) + "px")
                  .style("top", (event.pageY - 28) + "px");
         })
@@ -237,35 +247,10 @@ const LineChart = ({ data }) => {
                    .x(d => x(d.parsedDate.getHours() + d.parsedDate.getMinutes() / 60))
                    .y(d => y(d.Value));
 
-    // Draw line
-    // g.append("path")
-    //  .datum(filteredData)
-    //  .attr("class", "line")
-    //  .attr("d", line);
-
-    // // Points
-    // g.selectAll(".dot")
-    //  .data(filteredData)
-    //  .enter().append("circle")
-    //  .attr("class", "dot")
-    //  .attr("cx", d => x(d.parsedDate.getHours() + d.parsedDate.getMinutes() / 60))
-    //  .attr("cy", d => y(d.Value))
-    //  .attr("r", 5)
-    //  .on("mouseover", function(event, d) {
-    //    tooltip.transition()
-    //           .duration(200)
-    //           .style("opacity", .9);
-    //    tooltip.html(`${d.parsedDate.getHours() < 10 ? '0' + d.parsedDate.getHours() : d.parsedDate.getHours()}:${d.parsedDate.getMinutes() < 10 ? '0' + d.parsedDate.getMinutes() : d.parsedDate.getMinutes()}<br>Value: ${d.Value}`)
-    //           .style("left", (event.pageX + 5) + "px")
-    //           .style("top", (event.pageY - 28) + "px");
-    //  })
-    //  .on("mouseout", function() {
-    //    tooltip.transition()
-    //           .duration(500)
-    //           .style("opacity", 0);
-    //  });
-
-    const linePath = g.append("path")
+    const linePath = g.append("svg")
+                      .attr("width", width)
+                      .attr("height", height + margin.top + margin.bottom)
+                      .append("path")
                       .datum(filteredData)
                       .attr("class", "line")
                       .attr("d", line);
@@ -273,7 +258,11 @@ const LineChart = ({ data }) => {
     // Points
     const dots = g.selectAll(".dot")
                   .data(filteredData)
-                  .enter().append("circle")
+                  .enter()
+                  .append("svg")
+                  .attr("width", width)
+                  .attr("height", height + margin.top + margin.bottom)
+                  .append("circle")
                   .attr("class", "dot")
                   .attr("cx", d => x(d.parsedDate.getHours() + d.parsedDate.getMinutes() / 60))
                   .attr("cy", d => y(d.Value))
@@ -359,32 +348,40 @@ const ProjectInfo = () => {
   }
 
   useEffect(() => {
-    if (isFetchEnergy) {
-      getProjectSolarEnergy(timeUnit[pickerMode], dateStart, dateEnd)
-        .then(res => {
-          let tmp = res.data
-          if (pickerMode === 'date') {
-            tmp.map(data => {
-              if (data.Value > 1000)
-                data.Value = 0
-            })
-            while(tmp.length < 24)
-              tmp.push({ Value: 0 })
-          }
-          if (pickerMode === 'month') {
-            let daysInMonth = new Date(2024, moment(dateStart).month(), 0).getDate()
-            while(tmp.length < daysInMonth)
-              tmp.push({ Value: 0 })
-          }
-          if (pickerMode === 'year') {
-            while(tmp.length < 12)
-              tmp.push({ Value: 0 })
-          }
-          
-          setEnergyData(tmp)
-        })
+    async function getEnergyData() {
+      if (isFetchEnergy) {
+        getProjectSolarEnergy(timeUnit[pickerMode], dateStart, dateEnd)
+          .then(res => {
+            let tmp = res.data
+            if (pickerMode === 'date') {
+              tmp.map(data => {
+                if (data.Value > 1000)
+                  data.Value = 0
+              })
+              while(tmp.length < 24)
+                tmp.push({ Value: 0 })
+            }
+            if (pickerMode === 'month') {
+              let daysInMonth = new Date(2024, moment(dateStart).month(), 0).getDate()
+              while(tmp.length < daysInMonth)
+                tmp.push({ Value: 0 })
+            }
+            if (pickerMode === 'year') {
+              while(tmp.length < 12)
+                tmp.push({ Value: 0 })
+            }
+            setEnergyData(tmp)
+          })
+        setIsFetchEnergy(false)
+      }
+    }
+
+    getEnergyData()
+    const interval = setInterval(getEnergyData, 360000);
+    return () => {
+      clearInterval(interval)
       setIsFetchEnergy(false)
-    }    
+    }
   }, [isFetchEnergy])
 
   useEffect(() => {
