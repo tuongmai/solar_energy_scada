@@ -114,11 +114,6 @@ const LineChart = ({ data, measure, graphStep }) => {
                         .style("opacity", 0);
 
       // Line generator with missing data handling
-      const energyLine = d3.line()
-                     .defined(d => d.Value !== null && d.Value >= 0)
-                     .x(d => x(d.parsedDate))
-                     .y(d => y(d.Value));
-
       const dniLine = d3.line()
                      .defined(d => d.dni !== null && d.dni >= 0)
                      .x(d => x(d.parsedDate))
@@ -129,13 +124,10 @@ const LineChart = ({ data, measure, graphStep }) => {
                      .x(d => x(d.parsedDate))
                      .y(d => y2(d.temperature));
 
-      const energyLinePath = g.append("svg")
-                      .attr("width", width)
-                      .attr("height", height + margin.top + margin.bottom)
-                      .append("path")
-                      .datum(filteredData)
-                      .attr("class", "line line1")
-                      .attr("d", energyLine);
+      const energyLine = d3.line()
+                     .defined(d => d.Value !== null && d.Value >= 0)
+                     .x(d => x(d.parsedDate))
+                     .y(d => y(d.Value));
 
       const dniLinePath = g.append("svg")
                       .attr("width", width)
@@ -152,32 +144,15 @@ const LineChart = ({ data, measure, graphStep }) => {
                       .datum(filteredData)
                       .attr("class", "line line3")
                       .attr("d", temperatureLine);
-      // Points
-      const energyDots = g.selectAll(".dot1")
-                    .data(filteredData)
-                    .enter()
-                    .append("svg")
-                    .attr("width", width)
-                    .attr("height", height + margin.top + margin.bottom)
-                    .append("circle")
-                    .attr("class", "dot dot1")
-                    .attr("cx", d => x(d.parsedDate))
-                    .attr("cy", d => y(d.Value))
-                    .attr("r", 2)
-                    .on("mouseover", function(event, d) {
-                      tooltip.transition()
-                            .duration(200)
-                            .style("opacity", .9);
-                      tooltip.html(`${moment(d.parsedDate).format('MMM Do HH:mm')}<br>Energy: ${d.Value}`)
-                            .style("left", (event.pageX + 5) + "px")
-                            .style("top", (event.pageY - 28) + "px");
-                    })
-                    .on("mouseout", function() {
-                      tooltip.transition()
-                            .duration(500)
-                            .style("opacity", 0);
-                    });
 
+      const energyLinePath = g.append("svg")
+                      .attr("width", width)
+                      .attr("height", height + margin.top + margin.bottom)
+                      .append("path")
+                      .datum(filteredData)
+                      .attr("class", "line line1")
+                      .attr("d", energyLine);
+      // Points
       const dniDots = g.selectAll(".dot2")
                     .data(filteredData)
                     .enter()
@@ -219,6 +194,31 @@ const LineChart = ({ data, measure, graphStep }) => {
                             .duration(200)
                             .style("opacity", .9);
                       tooltip.html(`${moment(d.parsedDate).format('MMM Do HH:mm')}<br>Temperature: ${d.temperature}`)
+                            .style("left", (event.pageX + 5) + "px")
+                            .style("top", (event.pageY - 28) + "px");
+                    })
+                    .on("mouseout", function() {
+                      tooltip.transition()
+                            .duration(500)
+                            .style("opacity", 0);
+                    });
+
+      const energyDots = g.selectAll(".dot1")
+                    .data(filteredData)
+                    .enter()
+                    .append("svg")
+                    .attr("width", width)
+                    .attr("height", height + margin.top + margin.bottom)
+                    .append("circle")
+                    .attr("class", "dot dot1")
+                    .attr("cx", d => x(d.parsedDate))
+                    .attr("cy", d => y(d.Value))
+                    .attr("r", 2)
+                    .on("mouseover", function(event, d) {
+                      tooltip.transition()
+                            .duration(200)
+                            .style("opacity", .9);
+                      tooltip.html(`${moment(d.parsedDate).format('MMM Do HH:mm')}<br>Energy: ${d.Value}`)
                             .style("left", (event.pageX + 5) + "px")
                             .style("top", (event.pageY - 28) + "px");
                     })
